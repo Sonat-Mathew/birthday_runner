@@ -51,8 +51,15 @@ const groundH = 80;
 /* ================= SCALE ================= */
 
 let scale = 1;
+
+/* 🔧 FIX: lane draw sizes must be dynamic */
+let LANE_DRAW_WIDTH = 600;
+let LANE_DRAW_HEIGHT = 50;
+
 function calcScale() {
   scale = Math.min(canvas.width / 400, canvas.height / 700);
+  LANE_DRAW_WIDTH = 600 * scale;
+  LANE_DRAW_HEIGHT = 50 * scale;
 }
 
 /* ================= PLAYER ================= */
@@ -101,8 +108,6 @@ let punching = false;
 
 const LANE_X_START = 94;
 const LANE_WIDTH = 1355;
-const LANE_DRAW_WIDTH = 600 * scale;
-const LANE_DRAW_HEIGHT = 50 * scale;
 
 const LANE_SPRITES = [
   { y: 69, h: 269 },
@@ -291,16 +296,6 @@ function update() {
   }
 
   enemies = enemies.filter(o => o.x > -50);
-
-  if (!birthdayShown && Date.now() - startTime > 30000) {
-    state = STATE.BIRTHDAY;
-    birthdayShown = true;
-  }
-
-  if (state === STATE.RUNNING && Date.now() - startTime > 33000 && !sonatDone) {
-    state = STATE.SONAT;
-    sonatDone = true;
-  }
 }
 
 /* ================= DRAW ================= */
@@ -350,12 +345,6 @@ function draw() {
 
   ctx.textAlign = "center";
   if (state === STATE.START) ctx.fillText("CLICK TO START", canvas.width/2, canvas.height/2);
-  if (state === STATE.BIRTHDAY) ctx.fillText("🎉 Happy Birthday 🎉 — Click", canvas.width/2, canvas.height/2);
-  if (state === STATE.SONAT) {
-    ctx.fillText("Sonat asks for chelav", canvas.width/2, canvas.height/2 - 40*scale);
-    ctx.fillText("1. Agree", canvas.width/2, canvas.height/2);
-    ctx.fillText("2. Hit", canvas.width/2, canvas.height/2 + 40*scale);
-  }
   if (state === STATE.GAMEOVER) ctx.fillText("Game Over — Click to Restart", canvas.width/2, canvas.height/2);
 }
 
