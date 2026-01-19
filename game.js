@@ -31,7 +31,13 @@ window.addEventListener("resize", resize);
 
 /* ================= STATES ================= */
 
-const STATE = { START:0, RUNNING:1, GAMEOVER:2 };
+const STATE = {
+  START: 0,
+  RUNNING: 1,
+  BIRTHDAY: 2,
+  SONAT: 3,
+  GAMEOVER: 4
+};
 let state = STATE.START;
 
 /* ================= WORLD ================= */
@@ -97,6 +103,12 @@ let obstacles = [];
 let enemies = [];
 let cakeCount = 0;
 
+/* ================= TIMERS ================= */
+
+let startTime = 0;
+let birthdayShown = false;
+let sonatDone = false;
+
 /* ================= INPUT ================= */
 
 let touchStartY = null;
@@ -105,6 +117,11 @@ canvas.addEventListener("touchstart", e => {
   e.preventDefault();
 
   if (state === STATE.START) {
+    startGame();
+    return;
+  }
+
+  if (state === STATE.BIRTHDAY || state === STATE.SONAT) {
     state = STATE.RUNNING;
     return;
   }
@@ -127,11 +144,16 @@ canvas.addEventListener("touchend", e => {
 }, { passive:false });
 
 canvas.addEventListener("click", () => {
-  if (state === STATE.START) state = STATE.RUNNING;
+  if (state === STATE.START) startGame();
   else if (state === STATE.GAMEOVER) resetGame();
 });
 
 /* ================= GAME FLOW ================= */
+
+function startGame() {
+  state = STATE.RUNNING;
+  startTime = Date.now();
+}
 
 function resetGame() {
   state = STATE.START;
@@ -141,6 +163,11 @@ function resetGame() {
   cakeCount = 0;
   laneScroll = 0;
   lane = 1;
+  animFrame = 0;
+  animTimer = 0;
+  punching = false;
+  birthdayShown = false;
+  sonatDone = false;
   calcLanes();
 }
 
@@ -217,6 +244,32 @@ function update() {
       return;
     }
   }
+
+  if (!birthdayShown && Date.now() - startTime > 30000) {
+    state = STATE.BIRTHDAY;
+    birthdayShown = true;
+  }
+
+  if (state === STATE.RUNNING && Date.now() - startTime > 33000 && !sonatDone) {
+    state = STATE.SONAT;
+    sonatDone = true;
+  }
+}
+
+/* ================= UI HELPERS ================= */
+
+function drawOverlay(title, subtitle, color) {
+  ctx.fillStyle = "rgba(0,0,0,0.6)";
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  ctx.fillStyle = "#fff";
+  ctx.font = "bold 36px Arial";
+  ctx.textAlign = "center";
+  ctx.fillText(title, canvas.width/2, canvas.height/2 - 20);
+
+  ctx.font = "20px Arial";
+  ctx.fillStyle = color;
+  ctx.fillText(subtitle, canvas.width/2, canvas.height/2 + 20);
 }
 
 /* ================= DRAW ================= */
@@ -245,11 +298,8 @@ function draw() {
   drawLaneBackgrounds();
 
   const f = playerFrames[animFrame];
-  ctx.drawImage(
-    images.playerRun,
-    f.x, PLAYER_FRAME_Y, f.w, PLAYER_FRAME_HEIGHT,
-    player.x, player.y, player.w, player.h
-  );
+  ctx.drawImage(images.playerRun,f.x,PLAYER_FRAME_Y,f.w,PLAYER_FRAME_HEIGHT,
+    player.x,player.y,player.w,player.h);
 
   cakes.forEach(o=>ctx.drawImage(images.cake,o.x,lanes[o.lane]+25,30,30));
   obstacles.forEach(o=>ctx.drawImage(images.obstacle,o.x,lanes[o.lane],50,80));
@@ -259,11 +309,17 @@ function draw() {
   ctx.font="20px Arial";
   ctx.fillText("🍰 "+cakeCount,20,30);
 
-  ctx.textAlign="center";
-  if (state===STATE.START)
-    ctx.fillText("TAP TO START",canvas.width/2,canvas.height/2);
-  if (state===STATE.GAMEOVER)
-    ctx.fillText("Game Over — Tap",canvas.width/2,canvas.height/2);
+  if (state === STATE.START)
+    drawOverlay("Birthday Runner", "Tap to Start", "#ffd700");
+
+  if (state === STATE.BIRTHDAY)
+    drawOverlay("🎉 Happy Birthday 🎉", "Tap to continue", "#ff69b4");
+
+  if (state === STATE.SONAT)
+    drawOverlay("Sonat asks for chelav", "Tap to continue", "#7fffd4");
+
+  if (state === STATE.GAMEOVER)
+    drawOverlay("Game Over", "Tap to retry", "#ff4444");
 }
 
 /* ================= LOOP ================= */
@@ -275,5 +331,6 @@ function loop() {
 }
 
 /* ================= INIT ================= */
+
 resize();
 loop();
