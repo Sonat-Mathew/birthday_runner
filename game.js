@@ -12,6 +12,11 @@ function tryFullscreen() {
   document.documentElement.requestFullscreen?.();
 }
 
+/* 🔥 FIX: fullscreen resize bug */
+document.addEventListener("fullscreenchange", () => {
+  setTimeout(resize, 100);
+});
+
 /* ================= IMAGE LOADING ================= */
 
 const images = {};
@@ -138,15 +143,7 @@ let resultTime = 0;
 let agreeW = 180, agreeH = 60;
 let noClicks = 0;
 let noX = canvas.width/2 - 100;
-let noY = canvas.height/2 + 120;
-
-/* ================= COLLISION (MISSING FIX) ================= */
-
-const rectHit = (a,b) =>
-  a.x < b.x + b.w &&
-  a.x + a.w > b.x &&
-  a.y < b.y + b.h &&
-  a.y + a.h > b.y;
+let noY = canvas.height/2 + 120; // ⬇ below sentence always first time
 
 /* ================= INPUT ================= */
 
@@ -174,18 +171,18 @@ canvas.addEventListener("touchstart", e => {
     const agree = { x: canvas.width/2 - agreeW/2, y: canvas.height/2, w: agreeW, h: agreeH };
     const no = { x: noX, y: noY, w: 200, h: 60 };
 
-    if (rectHit({x,y,w:1,h:1}, agree)) {
+    if (x>agree.x && x<agree.x+agree.w && y>agree.y && y<agree.y+agree.h) {
       state = STATE.RESULT;
       resultTime = Date.now();
       return;
     }
 
-    if (rectHit({x,y,w:1,h:1}, no)) {
+    if (x>no.x && x<no.x+no.w && y>no.y && y<no.y+no.h) {
       noClicks++;
+
       if (noClicks <= 3) {
         noX = Math.random() * (canvas.width - 200);
-        noY = Math.random() * (canvas.height - 200);
-        if (noY < canvas.height/2 + 100) noY = canvas.height/2 + 100;
+        noY = Math.max(canvas.height/2 + 120, Math.random() * canvas.height);
       } else if (noClicks <= 6) {
         agreeW += 120;
         agreeH += 80;
@@ -227,6 +224,10 @@ function resetGame(){
   calcLanes();
 }
 
+/* ================= COLLISION ================= */
+
+const rectHit = (a,b)=>a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;
+
 /* ================= UPDATE ================= */
 
 function update(){
@@ -246,13 +247,20 @@ function update(){
       return o.x>-50;
     });
 
+    for(const o of [...obstacles,...enemies]){
+      if(rectHit(player,{x:o.x,y:lanes[o.lane],w:50,h:80})){
+        state=STATE.GAMEOVER; return;
+      }
+    }
+
     if(Date.now()-startTime>15000){
       state=STATE.BIRTHDAY;
       birthdayUnlockTime=Date.now()+2000;
     }
   }
 
-  if (state === STATE.RESULT && Date.now()-resultTime>2000) {
+  /* ✅ RESUME AFTER YAY */
+  if (state === STATE.RESULT && Date.now() - resultTime > 2000) {
     state = STATE.RUNNING;
     startTime = Date.now();
   }
@@ -267,9 +275,9 @@ function draw(){
   ctx.font="20px Arial";
   ctx.fillText("🍰 "+cakeCount,20,30);
 
-  if(state===STATE.START) drawOverlay("Tap to Start");
-  if(state===STATE.BIRTHDAY) drawOverlay("Happy Birthday 😌🥳");
-  if(state===STATE.RESULT) drawOverlay("yayy 🎉");
+  if(state===STATE.START)drawOverlay("Tap to Start");
+  if(state===STATE.BIRTHDAY)drawOverlay("Happy Birthday 😌🥳");
+  if(state===STATE.RESULT)drawOverlay("yayy 🎉");
 
   if(state===STATE.JOKE){
     drawOverlay("Sonat is asking for chelav");
@@ -279,7 +287,7 @@ function draw(){
     ctx.fillStyle="#000";
     ctx.fillText("AGREE",canvas.width/2,canvas.height/2+agreeH/2+10);
 
-    if(agreeW < canvas.width){
+    if(agreeW<canvas.width){
       ctx.fillStyle="#e74c3c";
       ctx.fillRect(noX,noY,200,60);
       ctx.fillStyle="#000";
@@ -303,5 +311,4 @@ function loop(){
   update();
   draw();
   requestAnimationFrame(loop);
-}
- 
+  }
