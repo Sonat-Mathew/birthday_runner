@@ -271,6 +271,12 @@ function punch(){
 function update(){
   if (state !== STATE.RUNNING) return;
 
+  /* ✅ RESULT → RESUME */
+if (state === STATE.RESULT && Date.now() - resultTime > 2000) {
+  state = STATE.RUNNING;
+  startTime = Date.now();
+}
+
   animTimer+=16;
   if(!punching && animTimer>animSpeed){animFrame=(animFrame+1)%4;animTimer=0;}
 
@@ -363,3 +369,4 @@ function loop(){
   requestAnimationFrame(loop);
 }
  
+
