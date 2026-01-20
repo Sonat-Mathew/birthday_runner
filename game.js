@@ -273,7 +273,7 @@ function update() {
     birthdayTime = now;
   }
 
-  if (state === STATE.BIRTHDAY && now - birthdayTime > 5000) {
+  if (state === STATE.BIRTHDAY && now - birthdayTime > 2000) {
     state = STATE.SONAT;
   }
 
@@ -293,11 +293,13 @@ function overlay(title, subtitle, color) {
   ctx.font = "bold 36px Arial";
   ctx.fillText(title, canvas.width/2, canvas.height/2 - 20);
 
-  ctx.font = "20px Arial";
-  ctx.fillStyle = color;
-  subtitle.split("\n").forEach((line,i)=>{
-    ctx.fillText(line, canvas.width/2, canvas.height/2 + 20 + i*24);
-  });
+  if (subtitle) {
+    ctx.font = "20px Arial";
+    ctx.fillStyle = color;
+    subtitle.split("\n").forEach((line,i)=>{
+      ctx.fillText(line, canvas.width/2, canvas.height/2 + 20 + i*24);
+    });
+  }
 }
 
 /* ================= DRAW ================= */
@@ -308,8 +310,11 @@ function drawLaneBackgrounds() {
     const y = lanes[i] + player.h - 10;
     const s = LANE_SPRITES[i];
     for (let x=-laneScroll%LANE_DRAW_WIDTH;x<canvas.width;x+=LANE_DRAW_WIDTH) {
-      ctx.drawImage(images.lane, LANE_X_START, s.y, LANE_WIDTH, s.h,
-        x, y, LANE_DRAW_WIDTH, LANE_DRAW_HEIGHT);
+      ctx.drawImage(
+        images.lane,
+        LANE_X_START, s.y, LANE_WIDTH, s.h,
+        x, y, LANE_DRAW_WIDTH, LANE_DRAW_HEIGHT
+      );
     }
   }
 }
@@ -333,7 +338,7 @@ function draw() {
   ctx.fillText("🍰 "+cakeCount,20,30);
 
   if (state === STATE.START) overlay("Birthday Runner", "Tap to Start", "#ffd700");
-  if (state === STATE.BIRTHDAY) overlay("🎉 Happy Birthday 🎉", "Enjoy the moment!", "#ff69b4");
+  if (state === STATE.BIRTHDAY) overlay("🎉 Happy Birthday 🎉", "", "#ff69b4");
   if (state === STATE.SONAT) overlay("Sonat asks for chelav", "Agree ←   → Disagree", "#7fffd4");
   if (state === STATE.SONAT_RESULT) overlay(sonatMessage, "", "#ffffff");
   if (state === STATE.GAMEOVER) overlay("Game Over", "Tap to retry", "#ff4444");
