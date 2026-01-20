@@ -118,8 +118,6 @@ let cakeCount = 0;
 
 let startTime = 0;
 let birthdayTime = 0;
-let inputLockedUntil = 0;
-
 let sonatResultTime = 0;
 let sonatMessage = "";
 
@@ -129,10 +127,6 @@ let touchStartY = null;
 
 canvas.addEventListener("touchstart", e => {
   e.preventDefault();
-
-  const now = Date.now();
-  if (now < inputLockedUntil) return;
-
   tryFullscreen();
 
   if (state === STATE.START) {
@@ -142,11 +136,6 @@ canvas.addEventListener("touchstart", e => {
 
   if (state === STATE.GAMEOVER) {
     resetGame();
-    return;
-  }
-
-  if (state === STATE.BIRTHDAY) {
-    state = STATE.RUNNING;
     return;
   }
 
@@ -162,6 +151,8 @@ canvas.addEventListener("touchstart", e => {
     state = STATE.SONAT_RESULT;
     return;
   }
+
+  if (state !== STATE.RUNNING) return;
 
   touchStartY = e.touches[0].clientY;
 }, { passive:false });
@@ -275,17 +266,18 @@ function update() {
     }
   }
 
-  if (Date.now() - startTime > 30000 && state === STATE.RUNNING) {
+  const now = Date.now();
+
+  if (state === STATE.RUNNING && now - startTime > 30000) {
     state = STATE.BIRTHDAY;
-    birthdayTime = Date.now();
-    inputLockedUntil = birthdayTime + 5000;
+    birthdayTime = now;
   }
 
-  if (Date.now() - startTime > 35000 && state === STATE.RUNNING) {
+  if (state === STATE.BIRTHDAY && now - birthdayTime > 5000) {
     state = STATE.SONAT;
   }
 
-  if (state === STATE.SONAT_RESULT && Date.now() - sonatResultTime > 3000) {
+  if (state === STATE.SONAT_RESULT && now - sonatResultTime > 3000) {
     state = STATE.RUNNING;
   }
 }
@@ -350,7 +342,8 @@ function draw() {
 /* ================= LOOP ================= */
 
 function loop() {
-  if (state === STATE.RUNNING || state === STATE.SONAT_RESULT) update();
+  if (state === STATE.RUNNING || state === STATE.BIRTHDAY || state === STATE.SONAT_RESULT)
+    update();
   draw();
   requestAnimationFrame(loop);
 }
