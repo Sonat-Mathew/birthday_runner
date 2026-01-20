@@ -12,9 +12,8 @@ function tryFullscreen() {
   document.documentElement.requestFullscreen?.();
 }
 
-/* ================= BACKGROUND MUSIC (FIXED PROPERLY) ================= */
+/* ================= BACKGROUND MUSIC (FIXED FOR REAL) ================= */
 
-// ❗ DO NOT create Audio here
 let bgMusic = null;
 let musicStarted = false;
 
@@ -169,12 +168,14 @@ let touchStartY = null;
 
 canvas.addEventListener("touchstart", e => {
 
-  // 🎵 REAL FIX: create Audio INSIDE user interaction
+  // ✅ FINAL AUDIO FIX (muted autoplay unlock)
   if (!musicStarted) {
     bgMusic = new Audio("assets/bg_music.mp3");
     bgMusic.loop = true;
-    bgMusic.volume = 0.4;
+    bgMusic.muted = true;
     bgMusic.play();
+    bgMusic.muted = false;
+    bgMusic.volume = 0.4;
     musicStarted = true;
   }
 
@@ -190,37 +191,9 @@ canvas.addEventListener("touchstart", e => {
     return;
   }
 
-  const x = e.touches[0].clientX;
   const y = e.touches[0].clientY;
-
-  if (state === STATE.JOKE) {
-    const agree = { x: canvas.width / 2 - agreeW / 2, y: canvas.height / 2, w: agreeW, h: agreeH };
-    const no = { x: noX, y: noY, w: 200, h: 60 };
-
-    if (x > no.x && x < no.x + no.w && y > no.y && y < no.y + no.h) {
-      noClicks++;
-      if (noClicks <= 3) {
-        noX = Math.random() * (canvas.width - 200);
-        noY = Math.random() * (canvas.height - 200);
-      } else if (noClicks <= 6) {
-        agreeW += 120;
-        agreeH += 80;
-      } else {
-        agreeW = canvas.width;
-        agreeH = canvas.height;
-      }
-      return;
-    }
-
-    if (x > agree.x && x < agree.x + agree.w && y > agree.y && y < agree.y + agree.h) {
-      state = STATE.RESULT;
-      resultTime = Date.now();
-      return;
-    }
-    return;
-  }
-
   if (state === STATE.RUNNING) touchStartY = y;
+
 }, { passive: false });
 
 canvas.addEventListener("touchend", e => {
@@ -270,7 +243,6 @@ function punch() {
 /* ================= UPDATE ================= */
 
 function update() {
-
   if (state === STATE.RUNNING) {
     animTimer += 16;
     if (!punching && animTimer > animSpeed) {
@@ -325,7 +297,8 @@ function draw() {
   obstacles.forEach(o => ctx.drawImage(images.obstacle, o.x, lanes[o.lane], 50, 80));
   enemies.forEach(o => ctx.drawImage(images.enemy, o.x, lanes[o.lane], 50, 80));
 
-  ctx.fillStyle = "#000"; ctx.font = "20px Arial";
+  ctx.fillStyle = "#000";
+  ctx.font = "20px Arial";
   ctx.fillText("🍰 " + cakeCount, 20, 30);
 
   if (state === STATE.START) drawOverlay("Tap to Start");
@@ -352,7 +325,8 @@ function draw() {
 
 function drawLaneBackgrounds() {
   for (let i = 0; i < 3; i++) {
-    const y = lanes[i] + player.h - 10, s = LANE_SPRITES[i];
+    const y = lanes[i] + player.h - 10;
+    const s = LANE_SPRITES[i];
     for (let x = -laneScroll % LANE_DRAW_WIDTH; x < canvas.width; x += LANE_DRAW_WIDTH) {
       ctx.drawImage(images.lane, LANE_X_START, s.y, LANE_WIDTH, s.h,
         x, y, LANE_DRAW_WIDTH, LANE_DRAW_HEIGHT);
@@ -375,5 +349,4 @@ function loop() {
   update();
   draw();
   requestAnimationFrame(loop);
-  }
- 
+                  }
