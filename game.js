@@ -137,6 +137,7 @@ setInterval(() => state === STATE.RUNNING && enemies.push({ x: canvas.width + 40
 
 let startTime = 0;
 let birthdayTime = 0;
+let birthdayUnlockTime = 0;
 let resultTime = 0;
 
 /* ================= JOKE ================= */
@@ -154,8 +155,9 @@ canvas.addEventListener("touchstart", e => {
   if (state === STATE.START) return startGame();
   if (state === STATE.GAMEOVER) return resetGame();
 
-  /* ✅ FIX: allow birthday to dismiss on touch */
+  /* 🎂 birthday locked for 2s */
   if (state === STATE.BIRTHDAY) {
+    if (Date.now() < birthdayUnlockTime) return;
     state = STATE.JOKE;
     return;
   }
@@ -167,16 +169,21 @@ canvas.addEventListener("touchstart", e => {
     const agree = { x: canvas.width/2 - agreeW/2, y: canvas.height/2, w: agreeW, h: agreeH };
     const no = { x: canvas.width/2 - 100, y: canvas.height/2 + agreeH + 20, w: 200, h: 60 };
 
-    if (x>agree.x && x<agree.x+agree.w && y>agree.y && y<agree.y+agree.h) {
+    if (x > agree.x && x < agree.x + agree.w && y > agree.y && y < agree.y + agree.h) {
       state = STATE.RESULT;
       resultTime = Date.now();
       return;
     }
 
-    if (x>no.x && x<no.x+no.w && y>no.y && y<no.y+no.h) {
+    if (x > no.x && x < no.x + no.w && y > no.y && y < no.y + no.h) {
       noClicks++;
-      agreeW += 80; agreeH += 40;
-      if (noClicks >= 10) { agreeW = canvas.width; agreeH = canvas.height; }
+      agreeW += 60;
+      agreeH += 35;
+
+      if (noClicks >= 7) {   // ✅ longer joke
+        agreeW = canvas.width;
+        agreeH = canvas.height;
+      }
       return;
     }
   }
@@ -199,19 +206,20 @@ canvas.addEventListener("touchend", e => {
 
 /* ================= GAME FLOW ================= */
 
-function startGame(){ state=STATE.RUNNING; startTime=Date.now(); }
+function startGame(){ state = STATE.RUNNING; startTime = Date.now(); }
+
 function resetGame(){
-  state=STATE.START;
-  cakes=[]; obstacles=[]; enemies=[];
-  cakeCount=0; laneScroll=0; bgScroll=0;
-  lane=1; animFrame=0; animTimer=0;
-  agreeW=180; agreeH=60; noClicks=0;
+  state = STATE.START;
+  cakes = []; obstacles = []; enemies = [];
+  cakeCount = 0; laneScroll = 0; bgScroll = 0;
+  lane = 1; animFrame = 0; animTimer = 0;
+  agreeW = 180; agreeH = 60; noClicks = 0;
   calcLanes();
 }
 
 /* ================= COLLISION ================= */
 
-const rectHit=(a,b)=>a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;
+const rectHit = (a,b)=>a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;
 
 /* ================= PUNCH ================= */
 
@@ -229,38 +237,36 @@ function update(){
   if (state === STATE.RUNNING) {
 
     animTimer+=16;
-    if(!punching&&animTimer>animSpeed){animFrame=(animFrame+1)%4;animTimer=0;}
+    if(!punching && animTimer>animSpeed){animFrame=(animFrame+1)%4;animTimer=0;}
 
     laneScroll+=speed;
     cakes.forEach(o=>o.x-=speed);
     obstacles.forEach(o=>o.x-=speed);
     enemies.forEach(o=>o.x-=speed);
 
-    cakes=cakes.filter(o=>{
-      if(rectHit(player,{x:o.x,y:lanes[o.lane]+25,w:30,h:30})){cakeCount++;return false;}
+    cakes = cakes.filter(o=>{
+      if(rectHit(player,{x:o.x,y:lanes[o.lane]+25,w:30,h:30})){
+        cakeCount++; return false;
+      }
       return o.x>-50;
     });
 
     for(const o of [...obstacles,...enemies]){
       if(rectHit(player,{x:o.x,y:lanes[o.lane],w:50,h:80})){
-        state=STATE.GAMEOVER;
-        return;
+        state=STATE.GAMEOVER; return;
       }
     }
 
-    if(Date.now()-startTime>15000){
-      state=STATE.BIRTHDAY;
-      birthdayTime=Date.now();
+    if(Date.now()-startTime > 15000){
+      state = STATE.BIRTHDAY;
+      birthdayTime = Date.now();
+      birthdayUnlockTime = birthdayTime + 2000;
     }
   }
 
-  if(state===STATE.BIRTHDAY && Date.now()-birthdayTime>2000){
-    state=STATE.JOKE;
-  }
-
-  if(state===STATE.RESULT && Date.now()-resultTime>2000){
-    state=STATE.RUNNING;
-    startTime=Date.now();
+  if(state === STATE.RESULT && Date.now()-resultTime > 2000){
+    state = STATE.RUNNING;
+    startTime = Date.now();
   }
 }
 
@@ -294,7 +300,7 @@ function draw(){
   obstacles.forEach(o=>ctx.drawImage(images.obstacle,o.x,lanes[o.lane],50,80));
   enemies.forEach(o=>ctx.drawImage(images.enemy,o.x,lanes[o.lane],50,80));
 
-  ctx.fillStyle="#000";ctx.font="20px Arial";
+  ctx.fillStyle="#000"; ctx.font="20px Arial";
   ctx.fillText("🍰 "+cakeCount,20,30);
 
   if(state===STATE.START)drawOverlay("Tap to Start");
@@ -308,6 +314,7 @@ function draw(){
     ctx.fillRect(canvas.width/2-agreeW/2,canvas.height/2,agreeW,agreeH);
     ctx.fillStyle="#000";
     ctx.fillText("AGREE",canvas.width/2,canvas.height/2+agreeH/2+10);
+
     if(agreeW<canvas.width){
       ctx.fillStyle="#e74c3c";
       ctx.fillRect(canvas.width/2-100,canvas.height/2+agreeH+20,200,60);
@@ -327,4 +334,3 @@ function loop(){
 
 resize();
 loop();
- 
