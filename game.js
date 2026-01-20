@@ -140,13 +140,15 @@ let birthdayTime = 0;
 let birthdayUnlockTime = 0;
 let resultTime = 0;
 
-/* ================= JOKE ================= */
+/* ================= JOKE (UPDATED LOGIC ONLY) ================= */
 
 let agreeW = 180, agreeH = 60;
 let noClicks = 0;
 let noX = 0, noY = 0;
 
 /* ================= INPUT ================= */
+
+let touchStartY = null;
 
 canvas.addEventListener("touchstart", e => {
   e.preventDefault();
@@ -158,6 +160,8 @@ canvas.addEventListener("touchstart", e => {
   if (state === STATE.BIRTHDAY) {
     if (Date.now() < birthdayUnlockTime) return;
     state = STATE.JOKE;
+    noX = canvas.width/2 - 100;
+    noY = canvas.height/2 + agreeH + 20;
     return;
   }
 
@@ -165,7 +169,6 @@ canvas.addEventListener("touchstart", e => {
   const y = e.touches[0].clientY;
 
   if (state === STATE.JOKE) {
-
     const agree = {
       x: canvas.width/2 - agreeW/2,
       y: canvas.height/2,
@@ -173,12 +176,7 @@ canvas.addEventListener("touchstart", e => {
       h: agreeH
     };
 
-    const no = {
-      x: noX,
-      y: noY,
-      w: 200,
-      h: 60
-    };
+    const no = { x: noX, y: noY, w: 200, h: 60 };
 
     if (x>agree.x && x<agree.x+agree.w && y>agree.y && y<agree.y+agree.h) {
       state = STATE.RESULT;
@@ -190,22 +188,35 @@ canvas.addEventListener("touchstart", e => {
       noClicks++;
 
       if (noClicks <= 3) {
-        // move NO randomly
         noX = Math.random() * (canvas.width - 200);
         noY = Math.random() * (canvas.height - 200);
-      }
+      } 
       else if (noClicks <= 6) {
-        // grow AGREE
         agreeW += 120;
         agreeH += 80;
-      }
+      } 
       else {
-        // final force
         agreeW = canvas.width;
         agreeH = canvas.height;
       }
     }
+    return;
   }
+
+  if (state === STATE.RUNNING) touchStartY = y;
+},{passive:false});
+
+canvas.addEventListener("touchend", e => {
+  e.preventDefault();
+  if (state !== STATE.RUNNING || touchStartY === null) return;
+
+  const diff = touchStartY - e.changedTouches[0].clientY;
+  if (diff > 40 && lane > 0) lane--;
+  else if (diff < -40 && lane < 2) lane++;
+  else punch();
+
+  player.y = lanes[lane];
+  touchStartY = null;
 },{passive:false});
 
 /* ================= GAME FLOW ================= */
@@ -224,15 +235,27 @@ function resetGame(){
   calcLanes();
 }
 
+/* ================= COLLISION ================= */
+
+const rectHit=(a,b)=>a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;
+
+/* ================= PUNCH ================= */
+
+function punch(){
+  punching=true; animFrame=4;
+  const box={x:player.x+player.w,y:player.y,w:60,h:player.h};
+  enemies=enemies.filter(e=>!rectHit(box,{x:e.x,y:lanes[e.lane],w:50,h:80}));
+  setTimeout(()=>{punching=false;animFrame=0;},150);
+}
+
 /* ================= UPDATE ================= */
 
 function update(){
   if (state !== STATE.RUNNING) return;
 
   animTimer+=16;
-  if(!punching && animTimer>animSpeed){
-    animFrame=(animFrame+1)%4;
-    animTimer=0;
+  if(!punching&&animTimer>animSpeed){
+    animFrame=(animFrame+1)%4; animTimer=0;
   }
 
   laneScroll+=speed;
@@ -240,46 +263,33 @@ function update(){
   obstacles.forEach(o=>o.x-=speed);
   enemies.forEach(o=>o.x-=speed);
 
-  cakes = cakes.filter(o=>{
-    if(o.x<player.x+player.w && o.x+30>player.x && lanes[o.lane]+25<player.y+player.h){
+  cakes=cakes.filter(o=>{
+    if(rectHit(player,{x:o.x,y:lanes[o.lane]+25,w:30,h:30})){
       cakeCount++; return false;
     }
     return o.x>-50;
   });
 
+  for(const o of [...obstacles,...enemies]){
+    if(rectHit(player,{x:o.x,y:lanes[o.lane],w:50,h:80})){
+      state=STATE.GAMEOVER; return;
+    }
+  }
+
   if(Date.now()-startTime>15000){
-    state = STATE.BIRTHDAY;
-    birthdayTime = Date.now();
-    birthdayUnlockTime = birthdayTime + 2000;
+    state=STATE.BIRTHDAY;
+    birthdayTime=Date.now();
+    birthdayUnlockTime=birthdayTime+2000;
   }
 }
 
 /* ================= DRAW ================= */
 
-function draw(){
-  drawBackground();
-
-  ctx.fillStyle="#000";
-  ctx.font="20px Arial";
-  ctx.fillText("🍰 "+cakeCount,20,30);
-
-  if(state===STATE.START) drawOverlay("Tap to Start");
-  if(state===STATE.BIRTHDAY) drawOverlay("Happy Birthday 😌🥳");
-  if(state===STATE.RESULT) drawOverlay("yayy 🎉");
-
-  if(state===STATE.JOKE){
-    drawOverlay("Sonat is asking for chelav");
-
-    ctx.fillStyle="#2ecc71";
-    ctx.fillRect(canvas.width/2-agreeW/2,canvas.height/2,agreeW,agreeH);
-    ctx.fillStyle="#000";
-    ctx.fillText("AGREE",canvas.width/2,canvas.height/2+agreeH/2+10);
-
-    if(agreeW < canvas.width){
-      ctx.fillStyle="#e74c3c";
-      ctx.fillRect(noX,noY,200,60);
-      ctx.fillStyle="#000";
-      ctx.fillText("NO",noX+100,noY+40);
+function drawLaneBackgrounds(){
+  for(let i=0;i<3;i++){
+    const y=lanes[i]+player.h-10,s=LANE_SPRITES[i];
+    for(let x=-laneScroll%LANE_DRAW_WIDTH;x<canvas.width;x+=LANE_DRAW_WIDTH){
+      ctx.drawImage(images.lane,LANE_X_START,s.y,LANE_WIDTH,s.h,x,y,LANE_DRAW_WIDTH,LANE_DRAW_HEIGHT);
     }
   }
 }
@@ -293,6 +303,40 @@ function drawOverlay(t){
   ctx.fillText(t,canvas.width/2,canvas.height/2);
 }
 
+function draw(){
+  drawBackground(); drawLaneBackgrounds();
+
+  const f=playerFrames[animFrame];
+  ctx.drawImage(images.playerRun,f.x,PLAYER_FRAME_Y,f.w,PLAYER_FRAME_HEIGHT,player.x,player.y,player.w,player.h);
+
+  cakes.forEach(o=>ctx.drawImage(images.cake,o.x,lanes[o.lane]+25,30,30));
+  obstacles.forEach(o=>ctx.drawImage(images.obstacle,o.x,lanes[o.lane],50,80));
+  enemies.forEach(o=>ctx.drawImage(images.enemy,o.x,lanes[o.lane],50,80));
+
+  ctx.fillStyle="#000"; ctx.font="20px Arial";
+  ctx.fillText("🍰 "+cakeCount,20,30);
+
+  if(state===STATE.START)drawOverlay("Tap to Start");
+  if(state===STATE.GAMEOVER)drawOverlay("Game Over");
+  if(state===STATE.BIRTHDAY)drawOverlay("Happy Birthday 😌🥳");
+  if(state===STATE.RESULT)drawOverlay("yayy 🎉");
+
+  if(state===STATE.JOKE){
+    drawOverlay("Sonat is asking for chelav");
+    ctx.fillStyle="#2ecc71";
+    ctx.fillRect(canvas.width/2-agreeW/2,canvas.height/2,agreeW,agreeH);
+    ctx.fillStyle="#000";
+    ctx.fillText("AGREE",canvas.width/2,canvas.height/2+agreeH/2+10);
+
+    if(agreeW<canvas.width){
+      ctx.fillStyle="#e74c3c";
+      ctx.fillRect(noX,noY,200,60);
+      ctx.fillStyle="#000";
+      ctx.fillText("NO",noX+100,noY+40);
+    }
+  }
+}
+
 /* ================= LOOP ================= */
 
 function loop(){
@@ -303,5 +347,3 @@ function loop(){
 
 resize();
 loop();
-
- 
