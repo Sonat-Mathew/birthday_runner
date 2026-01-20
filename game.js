@@ -198,6 +198,15 @@ function resetGame() {
   calcLanes();
 }
 
+/* ================= COLLISION ================= */
+
+function rectHit(a, b) {
+  return a.x < b.x + b.w &&
+         a.x + a.w > b.x &&
+         a.y < b.y + b.h &&
+         a.y + a.h > b.y;
+}
+
 /* ================= UPDATE ================= */
 
 function update() {
@@ -242,10 +251,50 @@ function update() {
 
   if (state === STATE.SONAT_RESULT && now - sonatResultTime > 3000) {
     state = STATE.RUNNING;
-    birthdayDone = true;
-    sonatDone = true;
     startTime = Date.now();
   }
+}
+
+/* ================= DRAW ================= */
+
+function drawLaneBackgrounds() {
+  if (state !== STATE.RUNNING) return;
+
+  for (let i=0;i<3;i++) {
+    const y = lanes[i] + player.h - 10;
+    const s = LANE_SPRITES[i];
+
+    for (let x=-laneScroll%LANE_DRAW_WIDTH;x<canvas.width;x+=LANE_DRAW_WIDTH) {
+      ctx.drawImage(
+        images.lane,
+        LANE_X_START, s.y, LANE_WIDTH, s.h,
+        x, y, LANE_DRAW_WIDTH, LANE_DRAW_HEIGHT
+      );
+    }
+  }
+}
+
+function draw() {
+  ctx.fillStyle = "#87ceeb";
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  drawLaneBackgrounds();
+
+  const f = playerFrames[animFrame];
+  ctx.drawImage(
+    images.playerRun,
+    f.x, PLAYER_FRAME_Y, f.w, PLAYER_FRAME_HEIGHT,
+    player.x, player.y,
+    player.w, player.h
+  );
+
+  cakes.forEach(o => ctx.drawImage(images.cake,o.x,lanes[o.lane]+25,30,30));
+  obstacles.forEach(o => ctx.drawImage(images.obstacle,o.x,lanes[o.lane],50,80));
+  enemies.forEach(o => ctx.drawImage(images.enemy,o.x,lanes[o.lane],50,80));
+
+  ctx.fillStyle="#000";
+  ctx.font="20px Arial";
+  ctx.fillText("🍰 "+cakeCount,20,30);
 }
 
 /* ================= LOOP ================= */
@@ -265,5 +314,3 @@ function loop() {
 
 resize();
 loop();
-
- 
