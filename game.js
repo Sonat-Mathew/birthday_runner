@@ -24,6 +24,7 @@ function loadImage(key, src) {
   images[key] = img;
 }
 
+loadImage("background", "assets/background.png"); // ✅ NEW
 loadImage("playerRun", "assets/player_run.png");
 loadImage("cake", "assets/cake.png");
 loadImage("obstacle", "assets/obstacle.png");
@@ -107,6 +108,24 @@ const LANE_SPRITES = [
 
 let laneScroll = 0;
 
+/* ================= BACKGROUND SCROLL ================= */
+
+let bgScroll = 0;
+const bgSpeed = 1.2; // slower than lanes
+
+function drawBackground() {
+  const img = images.background;
+  if (!img) return;
+
+  bgScroll += bgSpeed;
+  const w = img.width;
+  const h = canvas.height;
+
+  const x = -bgScroll % w;
+  ctx.drawImage(img, x, 0, w, h);
+  ctx.drawImage(img, x + w, 0, w, h);
+}
+
 /* ================= OBJECTS ================= */
 
 let cakes = [];
@@ -189,6 +208,7 @@ function resetGame() {
   enemies = [];
   cakeCount = 0;
   laneScroll = 0;
+  bgScroll = 0;
   lane = 1;
   animFrame = 0;
   animTimer = 0;
@@ -205,6 +225,24 @@ function rectHit(a, b) {
          a.x + a.w > b.x &&
          a.y < b.y + b.h &&
          a.y + a.h > b.y;
+}
+
+/* ================= PUNCH ================= */
+
+function punch() {
+  punching = true;
+  animFrame = 4;
+
+  const box = { x: player.x + player.w, y: player.y, w: 60, h: player.h };
+
+  enemies = enemies.filter(e =>
+    !rectHit(box, { x:e.x, y:lanes[e.lane], w:50, h:80 })
+  );
+
+  setTimeout(() => {
+    punching = false;
+    animFrame = 0;
+  }, 150);
 }
 
 /* ================= UPDATE ================= */
@@ -230,7 +268,6 @@ function update() {
     return o.x > -50;
   });
 
-  /* 🔒 DISABLE DEATH DURING HAPPY BIRTHDAY */
   if (state === STATE.RUNNING) {
     for (const o of [...obstacles, ...enemies]) {
       if (rectHit(player,{x:o.x,y:lanes[o.lane],w:50,h:80})) {
@@ -242,7 +279,6 @@ function update() {
 
   const now = Date.now();
 
-  /* 🎉 HAPPY BIRTHDAY AT 15 SECONDS */
   if (state === STATE.RUNNING && !birthdayDone && now - startTime > 15000) {
     state = STATE.BIRTHDAY;
     birthdayTime = now;
@@ -287,8 +323,7 @@ function overlay(title, subtitle) {
 }
 
 function draw() {
-  ctx.fillStyle="#87ceeb";
-  ctx.fillRect(0,0,canvas.width,canvas.height);
+  drawBackground(); // ✅ BACKGROUND FIRST
 
   drawLaneBackgrounds();
 
@@ -328,4 +363,3 @@ function loop() {
 
 resize();
 loop();
- 
