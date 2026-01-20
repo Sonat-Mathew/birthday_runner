@@ -319,7 +319,7 @@ function draw(){
   if(state===STATE.START)drawOverlay("Tap to Start");
   if(state===STATE.GAMEOVER)drawOverlay("Game Over");
   if(state===STATE.BIRTHDAY)drawOverlay("Happy Birthday 😌🥳");
-  if(state===STATE.RESULT)drawOverlay("yayy 🎉");
+  if(state===STATE.RESULT)drawOverlay("yayy 😌");
 
   if(state===STATE.JOKE){
     drawOverlay("Sonat is asking for chelav");
@@ -368,3 +368,4 @@ function loop(){
   draw();
   requestAnimationFrame(loop);
   }
+
