@@ -133,99 +133,39 @@ let obstacles = [];
 let enemies = [];
 let cakeCount = 0;
 
-/* ================= SPAWNING (FIX) ================= */
+/* ================= SPAWNING ================= */
 
 setInterval(() => {
-  if (state === STATE.RUNNING) {
+  if (state === STATE.RUNNING)
     cakes.push({ x: canvas.width + 40, lane: Math.floor(Math.random() * 3) });
-  }
 }, 1200);
 
 setInterval(() => {
-  if (state === STATE.RUNNING) {
+  if (state === STATE.RUNNING)
     obstacles.push({ x: canvas.width + 40, lane: Math.floor(Math.random() * 3) });
-  }
 }, 2500);
 
 setInterval(() => {
-  if (state === STATE.RUNNING) {
+  if (state === STATE.RUNNING)
     enemies.push({ x: canvas.width + 40, lane: Math.floor(Math.random() * 3) });
-  }
 }, 4000);
 
-/* ================= TIMERS ================= */
+/* ================= LANE DRAW (FIX) ================= */
 
-let startTime = 0;
-let birthdayTime = 0;
-let sonatResultTime = 0;
-let sonatMessage = "";
-let birthdayDone = false;
-let sonatDone = false;
+function drawLaneBackgrounds() {
+  for (let i = 0; i < 3; i++) {
+    const y = lanes[i] + player.h - 10;
+    const s = LANE_SPRITES[i];
 
-/* ================= INPUT ================= */
-
-let touchStartY = null;
-
-canvas.addEventListener("touchstart", e => {
-  e.preventDefault();
-  tryFullscreen();
-
-  if (state === STATE.START) return startGame();
-  if (state === STATE.GAMEOVER) return resetGame();
-
-  if (state === STATE.SONAT) {
-    if (e.touches[0].clientX < canvas.width / 2) {
-      sonatMessage = "yayyy 🎉";
-    } else {
-      sonatMessage = "kolladi 🖐\nsonat took all the cakes";
-      cakeCount = 0;
+    for (let x = -laneScroll % LANE_DRAW_WIDTH; x < canvas.width; x += LANE_DRAW_WIDTH) {
+      ctx.drawImage(
+        images.lane,
+        LANE_X_START, s.y, LANE_WIDTH, s.h,
+        x, y,
+        LANE_DRAW_WIDTH, LANE_DRAW_HEIGHT
+      );
     }
-    sonatResultTime = Date.now();
-    state = STATE.SONAT_RESULT;
-    sonatDone = true;
-    return;
   }
-
-  if (state === STATE.RUNNING) {
-    touchStartY = e.touches[0].clientY;
-  }
-}, { passive:false });
-
-canvas.addEventListener("touchend", e => {
-  e.preventDefault();
-  if (state !== STATE.RUNNING || touchStartY === null) return;
-
-  const diff = touchStartY - e.changedTouches[0].clientY;
-  if (diff > 40 && lane > 0) lane--;
-  else if (diff < -40 && lane < 2) lane++;
-  else punch();
-
-  player.y = lanes[lane];
-  touchStartY = null;
-}, { passive:false });
-
-/* ================= GAME FLOW ================= */
-
-function startGame() {
-  state = STATE.RUNNING;
-  startTime = Date.now();
-}
-
-function resetGame() {
-  state = STATE.START;
-  cakes = [];
-  obstacles = [];
-  enemies = [];
-  cakeCount = 0;
-  laneScroll = 0;
-  bgScroll = 0;
-  lane = 1;
-  animFrame = 0;
-  animTimer = 0;
-  punching = false;
-  birthdayDone = false;
-  sonatDone = false;
-  calcLanes();
 }
 
 /* ================= COLLISION ================= */
@@ -275,20 +215,6 @@ function update() {
       return;
     }
   }
-
-  const now = Date.now();
-  if (!birthdayDone && now - startTime > 15000) {
-    state = STATE.BIRTHDAY;
-    birthdayTime = now;
-    birthdayDone = true;
-  }
-  if (state === STATE.BIRTHDAY && !sonatDone && now - birthdayTime > 2000) {
-    state = STATE.SONAT;
-  }
-  if (state === STATE.SONAT_RESULT && now - sonatResultTime > 3000) {
-    state = STATE.RUNNING;
-    startTime = Date.now();
-  }
 }
 
 /* ================= DRAW ================= */
@@ -313,11 +239,10 @@ function draw() {
 /* ================= LOOP ================= */
 
 function loop() {
-  if (state === STATE.RUNNING || state === STATE.BIRTHDAY || state === STATE.SONAT_RESULT) update();
+  if (state === STATE.RUNNING) update();
   draw();
   requestAnimationFrame(loop);
 }
 
 resize();
 loop();
- 
