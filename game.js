@@ -154,6 +154,12 @@ canvas.addEventListener("touchstart", e => {
   if (state === STATE.START) return startGame();
   if (state === STATE.GAMEOVER) return resetGame();
 
+  /* ✅ FIX: allow birthday to dismiss on touch */
+  if (state === STATE.BIRTHDAY) {
+    state = STATE.JOKE;
+    return;
+  }
+
   const x = e.touches[0].clientX;
   const y = e.touches[0].clientY;
 
@@ -220,7 +226,6 @@ function punch(){
 
 function update(){
 
-  /* ---- RUNNING ONLY (movement & collisions) ---- */
   if (state === STATE.RUNNING) {
 
     animTimer+=16;
@@ -249,7 +254,6 @@ function update(){
     }
   }
 
-  /* ---- PAUSED STATE TIMERS ---- */
   if(state===STATE.BIRTHDAY && Date.now()-birthdayTime>2000){
     state=STATE.JOKE;
   }
@@ -323,4 +327,3 @@ function loop(){
 
 resize();
 loop();
- 
