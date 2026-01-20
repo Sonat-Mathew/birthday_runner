@@ -198,23 +198,6 @@ function resetGame() {
   calcLanes();
 }
 
-/* ================= SPAWNING ================= */
-
-setInterval(() => {
-  if (state === STATE.RUNNING)
-    cakes.push({ x: canvas.width + 40, lane: Math.floor(Math.random() * 3) });
-}, 1200);
-
-setInterval(() => {
-  if (state === STATE.RUNNING)
-    obstacles.push({ x: canvas.width + 40, lane: Math.floor(Math.random() * 3) });
-}, 2500);
-
-setInterval(() => {
-  if (state === STATE.RUNNING)
-    enemies.push({ x: canvas.width + 40, lane: Math.floor(Math.random() * 3) });
-}, 4000);
-
 /* ================= COLLISION ================= */
 
 function rectHit(a, b) {
@@ -222,24 +205,6 @@ function rectHit(a, b) {
          a.x + a.w > b.x &&
          a.y < b.y + b.h &&
          a.y + a.h > b.y;
-}
-
-/* ================= PUNCH ================= */
-
-function punch() {
-  punching = true;
-  animFrame = 4;
-
-  const box = { x: player.x + player.w, y: player.y, w: 60, h: player.h };
-
-  enemies = enemies.filter(e =>
-    !rectHit(box, { x:e.x, y:lanes[e.lane], w:50, h:80 })
-  );
-
-  setTimeout(() => {
-    punching = false;
-    animFrame = 0;
-  }, 150);
 }
 
 /* ================= UPDATE ================= */
@@ -265,16 +230,20 @@ function update() {
     return o.x > -50;
   });
 
-  for (const o of [...obstacles, ...enemies]) {
-    if (rectHit(player,{x:o.x,y:lanes[o.lane],w:50,h:80})) {
-      state = STATE.GAMEOVER;
-      return;
+  /* 🔒 DISABLE DEATH DURING HAPPY BIRTHDAY */
+  if (state === STATE.RUNNING) {
+    for (const o of [...obstacles, ...enemies]) {
+      if (rectHit(player,{x:o.x,y:lanes[o.lane],w:50,h:80})) {
+        state = STATE.GAMEOVER;
+        return;
+      }
     }
   }
 
   const now = Date.now();
 
-  if (state === STATE.RUNNING && !birthdayDone && now - startTime > 30000) {
+  /* 🎉 HAPPY BIRTHDAY AT 15 SECONDS */
+  if (state === STATE.RUNNING && !birthdayDone && now - startTime > 15000) {
     state = STATE.BIRTHDAY;
     birthdayTime = now;
     birthdayDone = true;
@@ -359,6 +328,3 @@ function loop() {
 
 resize();
 loop();
-
-
-
