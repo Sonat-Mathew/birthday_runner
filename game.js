@@ -221,14 +221,13 @@ function resetGame(){
 /* ================= UPDATE ================= */
 
 function update(){
+
   if (state === STATE.RUNNING) {
     animTimer+=16;
     if(animTimer>animSpeed){animFrame=(animFrame+1)%4;animTimer=0;}
 
     bgScroll+=speed;
     cakes.forEach(o=>o.x-=speed);
-    obstacles.forEach(o=>o.x-=speed);
-    enemies.forEach(o=>o.x-=speed);
 
     cakes=cakes.filter(o=>{
       if(o.x<player.x+player.w){ cakeCount++; return false; }
@@ -253,7 +252,7 @@ function update(){
 function draw(){
   drawBackground();
 
-  ctx.fillStyle="#fff"; // ✅ FIX: white counter
+  ctx.fillStyle="#fff"; // ✅ white counter
   ctx.font="20px Arial";
   ctx.fillText("🍰 "+cakeCount,20,30);
 
@@ -263,6 +262,7 @@ function draw(){
 
   if(state===STATE.JOKE){
     drawOverlay("Sonat is asking for chelav");
+
     ctx.fillStyle="#2ecc71";
     ctx.fillRect(canvas.width/2-agreeW/2,canvas.height/2,agreeW,agreeH);
     ctx.fillStyle="#000";
