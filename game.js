@@ -98,22 +98,6 @@ const playerFrames = [
 let animFrame = 0;
 let animTimer = 0;
 const animSpeed = 120;
-let punching = false;
-
-/* ================= LANE ================= */
-
-const LANE_X_START = 94;
-const LANE_WIDTH = 1355;
-const LANE_DRAW_WIDTH = 600;
-const LANE_DRAW_HEIGHT = 50;
-
-const LANE_SPRITES = [
-  { y: 69, h: 269 },
-  { y: 387, h: 275 },
-  { y: 719, h: 267 }
-];
-
-let laneScroll = 0;
 
 /* ================= BACKGROUND ================= */
 
@@ -154,7 +138,15 @@ let resultTime = 0;
 let agreeW = 180, agreeH = 60;
 let noClicks = 0;
 let noX = canvas.width/2 - 100;
-let noY = canvas.height/2 + 120; // ✅ always below sentence
+let noY = canvas.height/2 + 120;
+
+/* ================= COLLISION (MISSING FIX) ================= */
+
+const rectHit = (a,b) =>
+  a.x < b.x + b.w &&
+  a.x + a.w > b.x &&
+  a.y < b.y + b.h &&
+  a.y + a.h > b.y;
 
 /* ================= INPUT ================= */
 
@@ -182,25 +174,22 @@ canvas.addEventListener("touchstart", e => {
     const agree = { x: canvas.width/2 - agreeW/2, y: canvas.height/2, w: agreeW, h: agreeH };
     const no = { x: noX, y: noY, w: 200, h: 60 };
 
-    if (x>agree.x && x<agree.x+agree.w && y>agree.y && y<agree.y+agree.h) {
+    if (rectHit({x,y,w:1,h:1}, agree)) {
       state = STATE.RESULT;
       resultTime = Date.now();
       return;
     }
 
-    if (x>no.x && x<no.x+no.w && y>no.y && y<no.y+no.h) {
+    if (rectHit({x,y,w:1,h:1}, no)) {
       noClicks++;
-
       if (noClicks <= 3) {
         noX = Math.random() * (canvas.width - 200);
         noY = Math.random() * (canvas.height - 200);
         if (noY < canvas.height/2 + 100) noY = canvas.height/2 + 100;
-      } 
-      else if (noClicks <= 6) {
+      } else if (noClicks <= 6) {
         agreeW += 120;
         agreeH += 80;
-      } 
-      else {
+      } else {
         agreeW = canvas.width;
         agreeH = canvas.height;
       }
@@ -233,7 +222,7 @@ function startGame(){
 function resetGame(){
   state = STATE.START;
   cakes=[]; obstacles=[]; enemies=[];
-  cakeCount=0; laneScroll=0; bgScroll=0;
+  cakeCount=0; bgScroll=0;
   agreeW=180; agreeH=60; noClicks=0;
   calcLanes();
 }
@@ -242,12 +231,10 @@ function resetGame(){
 
 function update(){
 
-  /* ✅ RUNNING */
   if (state === STATE.RUNNING) {
     animTimer+=16;
     if(animTimer>animSpeed){animFrame=(animFrame+1)%4;animTimer=0;}
 
-    laneScroll+=speed;
     cakes.forEach(o=>o.x-=speed);
     obstacles.forEach(o=>o.x-=speed);
     enemies.forEach(o=>o.x-=speed);
@@ -259,20 +246,13 @@ function update(){
       return o.x>-50;
     });
 
-    for(const o of [...obstacles,...enemies]){
-      if(rectHit(player,{x:o.x,y:lanes[o.lane],w:50,h:80})){
-        state=STATE.GAMEOVER; return;
-      }
-    }
-
     if(Date.now()-startTime>15000){
       state=STATE.BIRTHDAY;
       birthdayUnlockTime=Date.now()+2000;
     }
   }
 
-  /* ✅ RESULT → RESUME */
-  if (state === STATE.RESULT && Date.now() - resultTime > 2000) {
+  if (state === STATE.RESULT && Date.now()-resultTime>2000) {
     state = STATE.RUNNING;
     startTime = Date.now();
   }
@@ -282,23 +262,14 @@ function update(){
 
 function draw(){
   drawBackground();
-  drawLaneBackgrounds();
-
-  const f=playerFrames[animFrame];
-  ctx.drawImage(images.playerRun,f.x,PLAYER_FRAME_Y,f.w,PLAYER_FRAME_HEIGHT,player.x,player.y,player.w,player.h);
-
-  cakes.forEach(o=>ctx.drawImage(images.cake,o.x,lanes[o.lane]+25,30,30));
-  obstacles.forEach(o=>ctx.drawImage(images.obstacle,o.x,lanes[o.lane],50,80));
-  enemies.forEach(o=>ctx.drawImage(images.enemy,o.x,lanes[o.lane],50,80));
 
   ctx.fillStyle="#fff";
   ctx.font="20px Arial";
   ctx.fillText("🍰 "+cakeCount,20,30);
 
-  if(state===STATE.START)drawOverlay("Tap to Start");
-  if(state===STATE.GAMEOVER)drawOverlay("Game Over");
-  if(state===STATE.BIRTHDAY)drawOverlay("Happy Birthday 😌🥳");
-  if(state===STATE.RESULT)drawOverlay("yayy 🎉");
+  if(state===STATE.START) drawOverlay("Tap to Start");
+  if(state===STATE.BIRTHDAY) drawOverlay("Happy Birthday 😌🥳");
+  if(state===STATE.RESULT) drawOverlay("yayy 🎉");
 
   if(state===STATE.JOKE){
     drawOverlay("Sonat is asking for chelav");
@@ -313,15 +284,6 @@ function draw(){
       ctx.fillRect(noX,noY,200,60);
       ctx.fillStyle="#000";
       ctx.fillText("NO",noX+100,noY+40);
-    }
-  }
-}
-
-function drawLaneBackgrounds(){
-  for(let i=0;i<3;i++){
-    const y=lanes[i]+player.h-10,s=LANE_SPRITES[i];
-    for(let x=-laneScroll%LANE_DRAW_WIDTH;x<canvas.width;x+=LANE_DRAW_WIDTH){
-      ctx.drawImage(images.lane,LANE_X_START,s.y,LANE_WIDTH,s.h,x,y,LANE_DRAW_WIDTH,LANE_DRAW_HEIGHT);
     }
   }
 }
@@ -341,5 +303,4 @@ function loop(){
   update();
   draw();
   requestAnimationFrame(loop);
-      }
- 
+}
