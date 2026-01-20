@@ -9,9 +9,7 @@ document.body.style.overflow = "hidden";
 
 function tryFullscreen() {
   if (document.fullscreenElement) return;
-  if (window.innerWidth > window.innerHeight) {
-    document.documentElement.requestFullscreen?.();
-  }
+  document.documentElement.requestFullscreen?.();
 }
 
 /* ================= IMAGE LOADING ================= */
@@ -173,8 +171,8 @@ canvas.addEventListener("touchstart", e => {
       noClicks++;
       agreeW += 80; agreeH += 40;
       if (noClicks >= 10) { agreeW = canvas.width; agreeH = canvas.height; }
+      return;
     }
-    return;
   }
 
   if (state === STATE.RUNNING) touchStartY = y;
@@ -221,6 +219,8 @@ function punch(){
 /* ================= UPDATE ================= */
 
 function update(){
+  if (state !== STATE.RUNNING) return;
+
   animTimer+=16;
   if(!punching&&animTimer>animSpeed){animFrame=(animFrame+1)%4;animTimer=0;}
 
@@ -299,12 +299,10 @@ function draw(){
 /* ================= LOOP ================= */
 
 function loop(){
-  if(state===STATE.RUNNING)update();
+  update();
   draw();
   requestAnimationFrame(loop);
 }
 
 resize();
 loop();
-
- 
