@@ -157,6 +157,13 @@ let noClicks = 0;
 let noX = canvas.width/2 - 100;
 let noY = canvas.height/2 + 100;
 
+/* ================= START BUTTON ================= */
+
+const startBtn = {
+  w: 220,
+  h: 70
+};
+
 /* ================= INPUT ================= */
 
 let touchStartY = null;
@@ -165,7 +172,19 @@ canvas.addEventListener("touchstart", e => {
   e.preventDefault();
   tryFullscreen();
 
-  if (state === STATE.START) return startGame();
+  const x = e.touches[0].clientX;
+  const y = e.touches[0].clientY;
+
+  if (state === STATE.START) {
+    const bx = canvas.width/2 - startBtn.w/2;
+    const by = canvas.height/2 + 40;
+
+    if (x > bx && x < bx + startBtn.w && y > by && y < by + startBtn.h) {
+      return startGame();
+    }
+    return;
+  }
+
   if (state === STATE.GAMEOVER) return resetGame();
 
   if (state === STATE.BIRTHDAY) {
@@ -173,9 +192,6 @@ canvas.addEventListener("touchstart", e => {
     state = STATE.JOKE;
     return;
   }
-
-  const x = e.touches[0].clientX;
-  const y = e.touches[0].clientY;
 
   if (state === STATE.JOKE) {
     const agree = { x: canvas.width/2 - agreeW/2, y: canvas.height/2, w: agreeW, h: agreeH };
@@ -189,7 +205,6 @@ canvas.addEventListener("touchstart", e => {
       x > agree.x && x < agree.x + agree.w &&
       y > agree.y && y < agree.y + agree.h;
 
-    // ✅ NO has priority (fixes overlap bug)
     if (hitNo) {
       noClicks++;
 
@@ -206,13 +221,11 @@ canvas.addEventListener("touchstart", e => {
       return;
     }
 
-    // ✅ AGREE only triggers if NO wasn't hit
     if (hitAgree) {
       state = STATE.RESULT;
       resultTime = Date.now();
       return;
     }
-
     return;
   }
 
@@ -305,8 +318,10 @@ function draw(){
   drawBackground();
   drawLaneBackgrounds();
 
-  const f=playerFrames[animFrame];
-  ctx.drawImage(images.playerRun,f.x,PLAYER_FRAME_Y,f.w,PLAYER_FRAME_HEIGHT,player.x,player.y,player.w,player.h);
+  if(state !== STATE.START){
+    const f=playerFrames[animFrame];
+    ctx.drawImage(images.playerRun,f.x,PLAYER_FRAME_Y,f.w,PLAYER_FRAME_HEIGHT,player.x,player.y,player.w,player.h);
+  }
 
   cakes.forEach(o=>ctx.drawImage(images.cake,o.x,lanes[o.lane]+25,30,30));
   obstacles.forEach(o=>ctx.drawImage(images.obstacle,o.x,lanes[o.lane],50,80));
@@ -316,7 +331,21 @@ function draw(){
   ctx.font="20px Arial";
   ctx.fillText("🍰 "+cakeCount,20,30);
 
-  if(state===STATE.START)drawOverlay("Tap to Start");
+  if(state===STATE.START){
+    drawOverlay("");
+    ctx.fillStyle="#fff";
+    ctx.font="22px Arial";
+    ctx.fillText("Turn on auto-rotate and play in landscape",canvas.width/2,canvas.height/2-40);
+
+    const bx = canvas.width/2 - startBtn.w/2;
+    const by = canvas.height/2 + 40;
+    ctx.fillStyle="#2ecc71";
+    ctx.fillRect(bx,by,startBtn.w,startBtn.h);
+    ctx.fillStyle="#000";
+    ctx.font="28px Arial";
+    ctx.fillText("START",canvas.width/2,by+46);
+  }
+
   if(state===STATE.GAMEOVER)drawOverlay("Game Over");
   if(state===STATE.BIRTHDAY)drawOverlay("Happy Birthday 😌🥳");
   if(state===STATE.RESULT)drawOverlay("yayy 😌");
@@ -367,5 +396,4 @@ function loop(){
   update();
   draw();
   requestAnimationFrame(loop);
-  }
-
+                                 }
