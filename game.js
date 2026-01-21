@@ -8,7 +8,7 @@ document.body.style.overflow = "hidden";
 /* ================= FULLSCREEN ================= */
 
 function tryFullscreen() {
-  if (document.fullscreenElement) return;
+  if (document.fullcreenElement) return;
   document.documentElement.requestFullscreen?.();
 }
 
@@ -159,10 +159,7 @@ let noY = canvas.height/2 + 100;
 
 /* ================= START BUTTON ================= */
 
-const startBtn = {
-  w: 220,
-  h: 70
-};
+const startBtn = { w: 220, h: 70 };
 
 /* ================= INPUT ================= */
 
@@ -178,7 +175,6 @@ canvas.addEventListener("touchstart", e => {
   if (state === STATE.START) {
     const bx = canvas.width/2 - startBtn.w/2;
     const by = canvas.height/2 + 40;
-
     if (x > bx && x < bx + startBtn.w && y > by && y < by + startBtn.h) {
       return startGame();
     }
@@ -189,6 +185,11 @@ canvas.addEventListener("touchstart", e => {
 
   if (state === STATE.BIRTHDAY) {
     if (Date.now() < birthdayUnlockTime) return;
+
+    /* ✅ ONLY CHANGE: initial NO position under AGREE */
+    noX = canvas.width / 2 - agreeW / 2;
+    noY = canvas.height / 2 + agreeH + 20;
+
     state = STATE.JOKE;
     return;
   }
@@ -207,7 +208,6 @@ canvas.addEventListener("touchstart", e => {
 
     if (hitNo) {
       noClicks++;
-
       if (noClicks <= 3) {
         noX = Math.random() * (canvas.width - 200);
         noY = Math.max(canvas.height/2 + 120, Math.random() * canvas.height);
@@ -263,7 +263,7 @@ function resetGame(){
 
 /* ================= COLLISION ================= */
 
-const rectHit = (a,b)=>a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;
+const rectHit=(a,b)=>a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;
 
 /* ================= PUNCH ================= */
 
@@ -331,24 +331,6 @@ function draw(){
   ctx.font="20px Arial";
   ctx.fillText("🍰 "+cakeCount,20,30);
 
-  if(state===STATE.START){
-    drawOverlay("");
-    ctx.fillStyle="#fff";
-    ctx.font="22px Arial";
-    ctx.fillText("Turn on auto rotate",canvas.width/2,canvas.height/2-90);
-    ctx.fillText("Play in landscape",canvas.width/2,canvas.height/2-60);
-    ctx.fillText("Swipe up / down to change lanes",canvas.width/2,canvas.height/2-30);
-    ctx.fillText("Tap to punch",canvas.width/2,canvas.height/2);
-
-    const bx = canvas.width/2 - startBtn.w/2;
-    const by = canvas.height/2 + 40;
-    ctx.fillStyle="#2ecc71";
-    ctx.fillRect(bx,by,startBtn.w,startBtn.h);
-    ctx.fillStyle="#000";
-    ctx.font="28px Arial";
-    ctx.fillText("START",canvas.width/2,by+46);
-  }
-
   if(state===STATE.GAMEOVER)drawOverlay("Game Over");
   if(state===STATE.BIRTHDAY)drawOverlay("Happy Birthday 😌🥳");
   if(state===STATE.RESULT)drawOverlay("yayy 😌");
@@ -400,5 +382,3 @@ function loop(){
   draw();
   requestAnimationFrame(loop);
 }
-
- 
