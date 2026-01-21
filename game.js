@@ -335,7 +335,8 @@ function draw(){
     drawOverlay("");
     ctx.fillStyle="#fff";
     ctx.font="22px Arial";
-    ctx.fillText("Turn on auto-rotate and play in landscape",canvas.width/2,canvas.height/2-40);
+    ctx.fillText("Turn on auto rotate",canvas.width/2,canvas.height/2-60);
+    ctx.fillText("and play in landscape",canvas.width/2,canvas.height/2-30);
 
     const bx = canvas.width/2 - startBtn.w/2;
     const by = canvas.height/2 + 40;
@@ -348,7 +349,7 @@ function draw(){
 
   if(state===STATE.GAMEOVER)drawOverlay("Game Over");
   if(state===STATE.BIRTHDAY)drawOverlay("Happy Birthday 😌🥳");
-  if(state===STATE.RESULT)drawOverlay("yayy 😌");
+  if(state===STATE.RESULT)drawOverlay("I knew you'd agree😌");
 
   if(state===STATE.JOKE){
     drawOverlay("Sonat is asking for chelav");
@@ -396,4 +397,4 @@ function loop(){
   update();
   draw();
   requestAnimationFrame(loop);
-                                 }
+  }
